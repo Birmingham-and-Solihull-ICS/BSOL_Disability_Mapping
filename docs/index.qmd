@@ -322,7 +322,12 @@ all_data <- readRDS("all_data.rds") %>%
   clean_names(case = "title",
               abbreviations = c("LSOA")) %>%
   rename(Numerator = Value,
-         Denominator = Population)
+         Denominator = Population) %>% 
+  mutate(
+    Numerator = format(Numerator, big.mark = ","),
+    Denominator = format(Denominator, big.mark = ",")
+  )
+
 
 
 knitr::kable(all_data)
