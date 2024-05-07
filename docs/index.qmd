@@ -4,6 +4,9 @@ format:
   dashboard:
     logo: ICB_Logo.PNG
     embed-resources: true
+    nav-buttons:
+      - icon: github
+        href: https://github.com/Birmingham-and-Solihull-ICS/BSOL_Disability_Mapping
 execute:
   echo: false
   warning: false
@@ -173,8 +176,8 @@ leaflet(shapefile_lsoa_one) %>%
     popup = ~paste("<strong>LSOA Name:</strong>", `LSOA Name`, "<br>",
                    "<strong>Ward Name:</strong>", `Ward Name`, "<br>",
                    "<strong>Local Authority District:</strong>", `Local Authority District Name`, "<br>",
-                   "<strong>Observation:</strong>", formatC(Value, format = "d", big.mark = ","), "<br>",
-                   "<strong>Resident Population:</strong>", formatC(Population, format = "d", big.mark = ","), "<br>",
+                   "<strong>Numerator:</strong>", formatC(Value, format = "d", big.mark = ","), "<br>",
+                   "<strong>Denominator:</strong>", formatC(Population, format = "d", big.mark = ","), "<br>",
                    "<strong>Proportion:</strong>", Proportion)
   ) %>%
  addLegend(
@@ -197,6 +200,8 @@ ft <- map1_data %>%
   rename(`LAD Code` = `Local Authority District Code`,
          `LAD Name` = `Local Authority District Name`) %>% 
   select(`LSOA Name`, `Ward Name`, `LAD Name`, Value, Population, Proportion) %>%
+   rename(Numerator = Value,
+         Denominator = Population) %>% 
   flextable() %>%
   add_footer_lines("Top 20 LSOAs by Proportion of Disability Category")
 
@@ -222,8 +227,8 @@ leaflet(shapefile_lsoa_two) %>%
     popup = ~paste("<strong>LSOA Name:</strong>", `LSOA Name`, "<br>",
                    "<strong>Ward Name:</strong>", `Ward Name`, "<br>",
                    "<strong>Local Authority District:</strong>", `Local Authority District Name`, "<br>",
-                   "<strong>Observation:</strong>", formatC(Value, format = "d", big.mark = ","), "<br>",
-                   "<strong>Resident Population:</strong>", formatC(Population, format = "d", big.mark = ","), "<br>",
+                   "<strong>Numerator:</strong>", formatC(Value, format = "d", big.mark = ","), "<br>",
+                   "<strong>Denominator:</strong>", formatC(Population, format = "d", big.mark = ","), "<br>",
                    "<strong>Proportion:</strong>", Proportion)
   ) %>%
   addLegend(
@@ -247,6 +252,8 @@ ft <- map2_data %>%
   rename(`LAD Code` = `Local Authority District Code`,
          `LAD Name` = `Local Authority District Name`) %>% 
   select(`LSOA Name`, `Ward Name`, `LAD Name`, Value, Population, Proportion) %>%
+  rename(Numerator = Value,
+         Denominator = Population) %>% 
   flextable() %>%
   add_footer_lines("Top 20 LSOAs by Proportion of Disability Category")
 
@@ -271,8 +278,8 @@ leaflet(shapefile_lsoa_three) %>%
     popup = ~paste("<strong>LSOA Name:</strong>", `LSOA Name`, "<br>",
                    "<strong>Ward Name:</strong>", `Ward Name`, "<br>",
                    "<strong>Local Authority District:</strong>", `Local Authority District Name`, "<br>",
-                   "<strong>Observation:</strong>", formatC(Value, format = "d", big.mark = ","), "<br>",
-                   "<strong>Resident Population:</strong>", formatC(Population, format = "d", big.mark = ","), "<br>",
+                   "<strong>Numerator:</strong>", formatC(Value, format = "d", big.mark = ","), "<br>",
+                   "<strong>Denominator:</strong>", formatC(Population, format = "d", big.mark = ","), "<br>",
                    "<strong>Proportion:</strong>", Proportion)
   ) %>%
   addLegend(
@@ -296,6 +303,8 @@ ft <- map3_data %>%
   rename(`LAD Code` = `Local Authority District Code`,
          `LAD Name` = `Local Authority District Name`) %>% 
   select(`LSOA Name`, `Ward Name`, `LAD Name`, Value, Population, Proportion) %>%
+  rename(Numerator = Value,
+         Denominator = Population) %>% 
   flextable() %>%
   add_footer_lines("Top 20 LSOAs by Proportion of Disability Category")
 
@@ -303,27 +312,20 @@ ft
 ```
 
 
-
+# Data
 
 ```{r}
-# 
-# all_data <- read_rds_data(rds_file_name = "All_data.rds", NULL)
-# 
-# bsol_data <- all_data %>%
-#   clean_names(case = "title",
-#               abbreviations = c("LSOA")) %>%
-#   filter(`Local Authority District Name` %in% c('Birmingham', 'Solihull'))
-# 
-# # Create datatable with options
-# DT::datatable(bsol_data,
-#           extensions = 'Buttons',
-#           options = list(
-#             dom = 'Blfrtip',
-#             buttons = c('copy', 'csv', 'excel', 'pdf'),
-#             pageLength = 25, # Number of rows in each page
-#             lengthMenu = list(c(10, 25, 50, -1), c('10 rows', '25 rows', '50 rows', 'All')),
-#             language = list(info = "Showing _START_ to _END_ of _TOTAL_ entries"),
-#             autoWidth = TRUE # Automatically adjust column widths
-#           ))
+#| label: Display_data
+
+all_data <- readRDS("all_data.rds") %>% 
+  filter(Local_Authority_District_Name %in%  c("Birmingham", "Solihull")) %>% 
+  clean_names(case = "title",
+              abbreviations = c("LSOA")) %>%
+  rename(Numerator = Value,
+         Denominator = Population)
+
+
+knitr::kable(all_data)
+
 
 ```
