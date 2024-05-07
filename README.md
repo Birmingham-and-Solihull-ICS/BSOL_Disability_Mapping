@@ -24,9 +24,9 @@ Link to LSOA Lookup: [LSOA 21 to Ward 22 to LAD 22 Lookup](https://www.data.gov.
 1. Enrich the data by joining the main dataset with the LSOA lookup to include information on Ward 22 and LAD 22.
 2. Filter the data to include only Local Authority Districts (LADs) within the Birmingham and Solihull footprints.
 3. Calculate the denominator by grouping the data by LSOA code and summing the "Observation" column.
-Optionally, combine the Disability Categories 1 and 2 into a single category.
-4. Calculate the proportion as: (Observation/Denominator)×100
-5. Create a total of three datasets, one for each respective disability category map.
+4. Optionally, combine the Disability Categories 1 and 2 into a single category.
+5. Calculate the proportion as: (Observation/Denominator)×100
+6. Create a total of three datasets, one for each respective disability category map.
 
 **Create Heatmap**
 
