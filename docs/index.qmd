@@ -1,0 +1,329 @@
+---
+title: "Disability Mapping"
+format: 
+  dashboard:
+    logo: ICB_Logo.PNG
+    embed-resources: true
+execute:
+  echo: false
+  warning: false
+  cache: true
+  enabled: true
+project:
+  output-dir: output
+---
+
+```{r}
+#| label: Context
+#| warning: false
+
+library(tidyverse)
+library(leaflet)
+library(leaflegend)
+library(sf)
+library(htmltools)
+library(RColorBrewer)
+library(flextable)
+library(janitor)
+library(DT)
+
+```
+
+```{r}
+#| label: Data
+#| 
+# read_rds_data <- function(rds_file_name, cols_list) {
+#   tryCatch({
+#     message(paste("Reading", rds_file_name, "..."))
+#     
+#     loaded_data <- readRDS(rds_file_name)
+#     
+#     if (!is.null(cols_list)) {
+#       colnames(loaded_data) <- cols_list
+#     }
+#     
+#     message("Done! Loaded as a dataframe!")
+#     return(loaded_data)
+#   }, error = function(e) {
+#     message("An unexpected error occurred: ", conditionMessage(e))
+#   })
+# }
+
+# Read RDS data
+
+file1 <- "Map1_data.rds"
+file2 <- "Map2_data.rds"
+file3 <- "Map3_data.rds"
+
+# map1_data <- read_rds_data(rds_file_name = file1, NULL)
+# map2_data <- read_rds_data(rds_file_name = file2, NULL)
+# map3_data <-read_rds_data(rds_file_name = file3, NULL)
+
+map1_data <- readRDS(file1)
+map2_data <- readRDS(file2)
+map3_data <-readRDS(file3)
+
+map1_data <- map1_data %>% 
+  clean_names(case = "title", abbreviations = c("LSOA"))
+map2_data <- map2_data %>% 
+  clean_names(case = "title", abbreviations = c("LSOA"))
+map3_data <- map3_data %>% 
+  clean_names(case = "title", abbreviations = c("LSOA"))
+
+
+```
+
+```{r, verbose=FALSE}
+#| label: Shapefile
+
+shapefile_lsoa <- st_read("Shapefiles/LSOA_MSOA_2021/LSOA/LSOA_2021_EW_BGC_V3.shp", quiet=TRUE)
+
+# Transform the projection of shape file from BNG to WGS84 before plotting with Leaflet
+shapefile_lsoa <- shapefile_lsoa %>%
+  st_transform(crs = 4326)
+
+# Join the main data with the LSOA shape file based on LSOA code
+shapefile_lsoa_one <- shapefile_lsoa %>% 
+  inner_join(map1_data,
+            by = c("LSOA21CD" = "LSOA Code"))
+
+shapefile_lsoa_two <- shapefile_lsoa %>% 
+  inner_join(map2_data,
+             by = c("LSOA21CD" = "LSOA Code"))
+
+shapefile_lsoa_three <- shapefile_lsoa %>% 
+  inner_join(map3_data,
+             by = c("LSOA21CD" = "LSOA Code"))
+
+```
+
+```{r}
+#| label: Map_Palette
+
+map_pal_one <- colorNumeric(
+  palette = "YlOrRd",
+  domain = shapefile_lsoa_one$Percentage
+)
+
+map_pal_two <- colorNumeric(
+  palette = "YlOrRd",
+  domain = shapefile_lsoa_two$Percentage
+)
+
+map_pal_three <- colorNumeric(
+  palette = "YlOrRd",
+  domain = shapefile_lsoa_three$Percentage
+)
+
+```
+
+# Background
+
+::: {.card title="Summary" fill=false}
+
+
+This report presents the mapping of the proportion of individuals observed within certain disability categories at the Lower Layer Super Output Area (LSOA) level. 
+
+The [data](https://www.ons.gov.uk/datasets/TS038/editions/2021/versions/3/filter-outputs/fe325de6-3443-47bf-be8d-3dcff4871406#get-data), sourced from the Office for National Statistics (ONS), enumerates the count for each of the following five disability categories within each LSOA:
+
+  * Does not apply (Code: -8)
+  * Disabled under the Equality Act: Day-to-day activities limited a lot (Code: 1)
+  * Disabled under the Equality Act: Day-to-day activities limited a little (Code: 2)
+  * Not disabled under the Equality Act: Has long-term physical or mental health condition but day-to-day activities are not limited (Code: 3)
+  * Not disabled under the Equality Act: No long-term physical or mental health conditions (Code: 4)
+  
+:::
+
+::: {.card title="Methodology" fill=false}
+
+
+1. The data is enriched with columns for Ward Code, Ward Name, Local Authority District (LAD) Code, Local Authority District (LAD) Name by merging LSOA 2021 data with the latest [lookup](https://www.data.gov.uk/dataset/19a01ab0-2111-4c29-8a89-a6dd14ba845c/lower-layer-super-output-area-2021-to-ward-2022-to-lad-2022-lookup-in-england-and-wales-v3) as of 31st December 2022. 
+
+2. To construct a map reflecting the proportion of people with disabilities within the Birmingham and Solihull (BSOL) area, the denominator is derived by aggregating the number of observations within each LSOA, thereby representing the population size at the LSOA level.
+
+3. The proportion is then determined by dividing the number of observations in each LSOA (the numerator) by the aforementioned denominator.
+
+4. Three maps are produced as follows:
+  * Map 1: Displays Disability Categories 1 & 2, combining the data for both categories.
+  * Map 2: Displays Disability Category 3
+  * Map 3: Displays Disability Category 4
+
+5. The color intensity on each map corresponds to the scale of the proportion observed within each LSOA, with greater color intensity indicating a higher proportion of the respective disability category.
+
+Should you have any questions or feedback, please direct them to the following email: nhsbsolicb.bi@nhs.net
+
+:::
+
+# Category 1 & 2 {orientation="columns"}
+
+## Column {width=60%}
+
+```{r}
+#| label: Map_One
+#| title: "Disabled under the Equality Act: Day-to-day activities limited a lot/a little"
+
+leaflet(shapefile_lsoa_one) %>%
+  addTiles() %>%
+  addPolygons(
+    fillColor = ~map_pal_one(Percentage),
+    color = "black", # Border color for each LSOA
+    weight = 1,
+    opacity = 1,
+    fillOpacity = 0.6, # Reduced opacity to see map details
+    popup = ~paste("<strong>LSOA Name:</strong>", `LSOA Name`, "<br>",
+                   "<strong>Ward Name:</strong>", `Ward Name`, "<br>",
+                   "<strong>Local Authority District:</strong>", `Local Authority District Name`, "<br>",
+                   "<strong>Observation:</strong>", formatC(Value, format = "d", big.mark = ","), "<br>",
+                   "<strong>Resident Population:</strong>", formatC(Population, format = "d", big.mark = ","), "<br>",
+                   "<strong>Proportion:</strong>", Proportion)
+  ) %>%
+ addLegend(
+    data = shapefile_lsoa_one,
+    position = "topright",
+    pal = map_pal_one,
+    values = ~Percentage,
+    title = "Proportion"
+  )
+
+```
+
+## Column{width=40%}
+```{r}
+map1_data <- map1_data %>% 
+  arrange(desc(Percentage)) %>% 
+  slice(1:20)
+
+ft <- map1_data %>%
+  rename(`LAD Code` = `Local Authority District Code`,
+         `LAD Name` = `Local Authority District Name`) %>% 
+  select(`LSOA Name`, `Ward Name`, `LAD Name`, Value, Population, Proportion) %>%
+  flextable() %>%
+  add_footer_lines("Top 20 LSOAs by Proportion of Disability Category")
+
+ft
+```
+
+# Category 3 {orientation="columns"}
+## Column{width=60%}
+
+```{r}
+#| label: Map_2
+#| title: "Not disabled under the Equality Act: Has long-term physical or mental health condition but day-to-day activities are not limited"
+
+
+leaflet(shapefile_lsoa_two) %>%
+  addTiles() %>%
+  addPolygons(
+    fillColor = ~map_pal_two(Percentage),
+    color = "black", # Border color for each LSOA
+    weight = 1,
+    opacity = 1,
+    fillOpacity = 0.6, # Reduced opacity to see map details
+    popup = ~paste("<strong>LSOA Name:</strong>", `LSOA Name`, "<br>",
+                   "<strong>Ward Name:</strong>", `Ward Name`, "<br>",
+                   "<strong>Local Authority District:</strong>", `Local Authority District Name`, "<br>",
+                   "<strong>Observation:</strong>", formatC(Value, format = "d", big.mark = ","), "<br>",
+                   "<strong>Resident Population:</strong>", formatC(Population, format = "d", big.mark = ","), "<br>",
+                   "<strong>Proportion:</strong>", Proportion)
+  ) %>%
+  addLegend(
+    data = shapefile_lsoa_two,
+    position = "topright",
+    pal = map_pal_two,
+    values = ~Percentage,
+    title = "Proportion"
+  )
+
+```
+
+## Column{width=40%}
+
+```{r}
+map2_data <- map2_data %>% 
+  arrange(desc(Percentage)) %>% 
+  slice(1:20)
+
+ft <- map2_data %>%
+  rename(`LAD Code` = `Local Authority District Code`,
+         `LAD Name` = `Local Authority District Name`) %>% 
+  select(`LSOA Name`, `Ward Name`, `LAD Name`, Value, Population, Proportion) %>%
+  flextable() %>%
+  add_footer_lines("Top 20 LSOAs by Proportion of Disability Category")
+
+ft
+```
+
+# Category 4 {orientation="columns"}
+## Column{width=60%}
+```{r}
+#| label: Map_three
+#| title: "Not disabled under the Equality Act: No long-term physical or mental health conditions"
+
+
+leaflet(shapefile_lsoa_three) %>%
+  addTiles() %>%
+  addPolygons(
+    fillColor = ~map_pal_three(Percentage),
+    color = "black", # Border color for each LSOA
+    weight = 1,
+    opacity = 1,
+    fillOpacity = 0.6, # Reduced opacity to see map details
+    popup = ~paste("<strong>LSOA Name:</strong>", `LSOA Name`, "<br>",
+                   "<strong>Ward Name:</strong>", `Ward Name`, "<br>",
+                   "<strong>Local Authority District:</strong>", `Local Authority District Name`, "<br>",
+                   "<strong>Observation:</strong>", formatC(Value, format = "d", big.mark = ","), "<br>",
+                   "<strong>Resident Population:</strong>", formatC(Population, format = "d", big.mark = ","), "<br>",
+                   "<strong>Proportion:</strong>", Proportion)
+  ) %>%
+  addLegend(
+    data = shapefile_lsoa_three,
+    position = "topright",
+    pal = map_pal_three,
+    values = ~Percentage,
+    title = "Proportion"
+  )
+```
+
+## Column{width=40%}
+
+```{r}
+
+map3_data <- map3_data %>% 
+  arrange(desc(Percentage)) %>% 
+  slice(1:20)
+
+ft <- map3_data %>%
+  rename(`LAD Code` = `Local Authority District Code`,
+         `LAD Name` = `Local Authority District Name`) %>% 
+  select(`LSOA Name`, `Ward Name`, `LAD Name`, Value, Population, Proportion) %>%
+  flextable() %>%
+  add_footer_lines("Top 20 LSOAs by Proportion of Disability Category")
+
+ft
+```
+
+
+
+
+```{r}
+# 
+# all_data <- read_rds_data(rds_file_name = "All_data.rds", NULL)
+# 
+# bsol_data <- all_data %>%
+#   clean_names(case = "title",
+#               abbreviations = c("LSOA")) %>%
+#   filter(`Local Authority District Name` %in% c('Birmingham', 'Solihull'))
+# 
+# # Create datatable with options
+# DT::datatable(bsol_data,
+#           extensions = 'Buttons',
+#           options = list(
+#             dom = 'Blfrtip',
+#             buttons = c('copy', 'csv', 'excel', 'pdf'),
+#             pageLength = 25, # Number of rows in each page
+#             lengthMenu = list(c(10, 25, 50, -1), c('10 rows', '25 rows', '50 rows', 'All')),
+#             language = list(info = "Showing _START_ to _END_ of _TOTAL_ entries"),
+#             autoWidth = TRUE # Automatically adjust column widths
+#           ))
+
+```
